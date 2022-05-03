@@ -1,35 +1,129 @@
-import * as React from 'react';
+import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import type { NextPage } from 'next';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
+import { styled, alpha } from '@mui/material/styles';
+import AppBar from '@mui/material/AppBar';
+import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
-import Link from '../src/Link';
-import ProTip from '../src/ProTip';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import InputBase from '@mui/material/InputBase';
+import Container from '@mui/material/Container';
+import SearchIcon from '@mui/icons-material/Search';
+
+import Player from '../src/YoutubePlayer';
 import Copyright from '../src/Copyright';
 
-const Home: NextPage = () => {
+const Search = styled(Paper)(({ theme }) => ({
+  position: 'relative',
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: alpha(theme.palette.common.white, 0.15),
+  '&:hover': {
+    backgroundColor: alpha(theme.palette.common.white, 0.25)
+  },
+  marginRight: theme.spacing(2),
+  marginLeft: 0,
+  width: '100%',
+  [theme.breakpoints.up('sm')]: {
+    marginLeft: theme.spacing(3),
+    width: 'auto'
+  }
+}));
+
+const SearchIconWrapper = styled('div')(({ theme }) => ({
+  padding: theme.spacing(0, 2),
+  height: '100%',
+  position: 'absolute',
+  pointerEvents: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+}));
+
+const StyledInputBase = styled(InputBase)(({ theme }) => ({
+  color: 'inherit',
+  '& .MuiInputBase-input': {
+    padding: theme.spacing(1, 1, 1, 0),
+    // vertical padding + font size from searchIcon
+    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+    transition: theme.transitions.create('width'),
+    width: '100%'
+  }
+}));
+
+const Home: NextPage = ({
+  ytid
+}: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   return (
-    <Container maxWidth="lg">
-      <Box
-        sx={{
-          my: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <Typography variant="h4" component="h1" gutterBottom>
-          MUI v5 + Next.js with TypeScript example
+    <>
+      <AppBar position="relative">
+        <Toolbar>
+          <Typography variant="h6" color="inherit" noWrap>
+            Youtube Looper
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <main>
+        {/* Hero unit */}
+        <Box
+          sx={{
+            bgcolor: 'background.paper',
+            pt: 8,
+            pb: 6
+          }}
+        >
+          <Container maxWidth="sm">
+            <Typography
+              component="h1"
+              variant="h2"
+              align="center"
+              color="text.primary"
+              gutterBottom
+            >
+              Album layout
+            </Typography>
+
+            <Search>
+              <SearchIconWrapper>
+                <SearchIcon />
+              </SearchIconWrapper>
+              <StyledInputBase
+                placeholder="Paste Youtube URL here..."
+                inputProps={{ 'aria-label': 'search' }}
+              />
+            </Search>
+          </Container>
+        </Box>
+        <Container sx={{ py: 8 }} maxWidth="md">
+          <Player ytid={ytid} />
+        </Container>
+      </main>
+      {/* Footer */}
+      <Box sx={{ bgcolor: 'background.paper', p: 6 }} component="footer">
+        <Typography variant="h6" align="center" gutterBottom>
+          Footer
         </Typography>
-        <Link href="/about" color="secondary">
-          Go to the about page
-        </Link>
-        <ProTip />
+        <Typography
+          variant="subtitle1"
+          align="center"
+          color="text.secondary"
+          component="p"
+        >
+          Something here to give the footer a purpose!
+        </Typography>
         <Copyright />
       </Box>
-    </Container>
+    </>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const ytid = 'ttpO7wNqFv8';
+
+  return {
+    props: {
+      ytid
+    } // will be passed to the page component as props
+  };
 };
 
 export default Home;

@@ -160,7 +160,7 @@ const Home: NextPage = ({
           }}
         >
           <Container maxWidth="sm">
-            <Typography
+            {/* <Typography
               component="h1"
               variant="h2"
               align="center"
@@ -168,7 +168,7 @@ const Home: NextPage = ({
               gutterBottom
             >
               Album layout
-            </Typography>
+            </Typography> */}
 
             <Search>
               <SearchIconWrapper>
@@ -184,7 +184,7 @@ const Home: NextPage = ({
             </Search>
           </Container>
         </Box>
-        <Container sx={{ py: 8 }} maxWidth="md">
+        <Container sx={{ pb: 8 }} maxWidth="md">
           {video && <Player setYtid={setValue1} {...video} />}
         </Container>
       </main>

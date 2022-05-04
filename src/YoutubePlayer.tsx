@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -31,45 +32,6 @@ import {
 const minDistance = 10;
 
 const PLAYER_TIME_CHECK_INTERVAL = 1.5; // in seconds
-
-const PrettoSlider = styled(Slider)({
-  color: '#52af77',
-  height: 8,
-  '& .MuiSlider-track': {
-    border: 'none'
-  },
-  '& .MuiSlider-thumb': {
-    height: 24,
-    width: 24,
-    backgroundColor: '#fff',
-    border: '2px solid currentColor',
-    '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
-      boxShadow: 'inherit'
-    },
-    '&:before': {
-      display: 'none'
-    }
-  },
-  '& .MuiSlider-valueLabel': {
-    lineHeight: 1.2,
-    fontSize: 12,
-    background: 'unset',
-    padding: 0,
-    width: 32,
-    height: 32,
-    borderRadius: '50% 50% 50% 0',
-    backgroundColor: '#52af77',
-    transformOrigin: 'bottom left',
-    transform: 'translate(50%, -100%) rotate(-45deg) scale(0)',
-    '&:before': { display: 'none' },
-    '&.MuiSlider-valueLabelOpen': {
-      transform: 'translate(50%, -100%) rotate(-45deg) scale(1)'
-    },
-    '& > *': {
-      transform: 'rotate(45deg)'
-    }
-  }
-});
 
 const AirbnbSlider = styled(Slider)(({ theme }) => ({
   color: '#3a8589',
@@ -156,6 +118,8 @@ export default function Player({
   startTime,
   endTime
 }: IProps) {
+  const router = useRouter();
+
   const [value1, setValue1] = useState<number[]>([startTime, endTime]);
   const [isReady, setIsReady] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
@@ -163,6 +127,13 @@ export default function Player({
   const [toggle, setToggle] = useState(false);
   const [repeatMode, setRepeatMode] = useState(true);
   const [shuffleMode, setShuffleMode] = useState(false);
+
+  useEffect(() => {
+    const sliderStart = router.query?.s ? Number(router.query?.s) : startTime;
+    const sliderEnd = router.query?.e ? Number(router.query?.e) : endTime;
+
+    setValue1([sliderStart, sliderEnd]);
+  }, []);
 
   const getMarks = () => {
     const startTime_str = durationToHMSString(startTime);
@@ -207,10 +178,18 @@ export default function Player({
 
     if (activeThumb === 0) {
       const startTime1 = Math.min(newValue[0], value1[1] - minDistance);
-      setValue1([startTime1, value1[1]]);
+      const endTime1 = value1[1];
+      router.push(`/?s=${startTime1}&e=${endTime1}`, undefined, {
+        shallow: true
+      });
+      setValue1([startTime1, endTime1]);
     } else {
+      const startTime1 = value1[0];
       const endTime1 = Math.max(newValue[1], value1[0] + minDistance);
-      setValue1([value1[0], endTime1]);
+      router.push(`/?s=${startTime1}&e=${endTime1}`, undefined, {
+        shallow: true
+      });
+      setValue1([startTime1, endTime1]);
     }
   };
 

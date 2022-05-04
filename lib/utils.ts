@@ -19,7 +19,7 @@ export function parseDurationHMS(d: string) {
   return [hours, minutes, seconds];
 }
 
-export function durationToHMSString(num) {
+export function durationToHMSString(num: number | string) {
   var d = Number(num);
   var h = Math.floor(d / 3600);
   var m = Math.floor((d % 3600) / 60);

@@ -5,7 +5,7 @@ export function parseDurationHMS(d: string) {
     seconds = 0;
 
   let result;
-  while ((result = expression.exec(d)) !== null) {
+  if ((result = expression.exec(d)) !== null) {
     if (result[1]) {
       hours = Number(result[1]);
     }
@@ -16,6 +16,7 @@ export function parseDurationHMS(d: string) {
       seconds = Number(result[3]);
     }
   }
+
   return [hours, minutes, seconds];
 }
 
@@ -45,7 +46,7 @@ export function parseDurationHMSString(d: string) {
     hour_str = '';
 
   let result;
-  while ((result = expression.exec(d)) !== null) {
+  if ((result = expression.exec(d)) !== null) {
     if (result[1]) {
       hours = Number(result[1]);
     }

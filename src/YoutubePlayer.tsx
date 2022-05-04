@@ -156,15 +156,7 @@ export default function Player({
   startTime,
   endTime
 }: IProps) {
-  const [value1, setValue1] = useState<number[]>([
-    startTime ?? 0,
-    endTime ?? 0
-  ]);
-  const [marks, setMarks] = useState<Marks[]>([]);
-  const [sliderValue, setSliderValue] = useState({
-    sliderStart: 0,
-    sliderEnd: 0
-  });
+  const [value1, setValue1] = useState<number[]>([startTime, endTime]);
   const [isReady, setIsReady] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
   const [playerState, setPlayerState] = useState(PlayerState.Unstarted);
@@ -176,7 +168,7 @@ export default function Player({
     const startTime_str = durationToHMSString(startTime);
     const endTime_str = durationToHMSString(endTime);
 
-    return [
+    const marks = [
       {
         value: startTime,
         label: startTime_str
@@ -186,6 +178,9 @@ export default function Player({
         label: endTime_str
       }
     ];
+    console.log(JSON.stringify(marks));
+
+    return marks;
   };
 
   // every `PLAYER_TIME_CHECK_INTERVAL` seconds, we check the current time of the video, and
@@ -219,30 +214,36 @@ export default function Player({
     }
   };
 
-  useEffect(() => {
-    switch (playerState) {
-      case PlayerState.Playing:
-        // console.log('play');
-        pauseVideo();
-        break;
+  // useEffect(() => {
+  //   switch (playerState) {
+  //     case PlayerState.Playing:
+  //       // console.log('play');
+  //       pauseVideo();
+  //       break;
 
-      case PlayerState.Paused:
-      case PlayerState.Ended:
-      case PlayerState.Unstarted:
-      case PlayerState.VideoCued:
-        // console.log('pause');
-        playVideo();
-        break;
+  //     case PlayerState.Paused:
+  //     case PlayerState.Ended:
+  //     case PlayerState.Unstarted:
+  //     case PlayerState.VideoCued:
+  //       // console.log('pause');
+  //       playVideo();
+  //       break;
 
-      default:
-        break;
-    }
-  }, [toggle]);
+  //     default:
+  //       break;
+  //   }
+  // }, [toggle]);
 
   const onReady = (evt: any) => {
     // grab the YT player object from evt.target
     player = evt.target;
     setIsReady(true);
+  };
+
+  const onError = (err: any) => {
+    console.error('Error::', err);
+    // 101 and 150 are the error codes for blocked videos
+    // if (err.data == 101 || err.data == 150) {}
   };
 
   const onStateChange = (evt: any) => {
@@ -359,12 +360,6 @@ export default function Player({
     playVideo();
   }
 
-  const onError = (err: any) => {
-    console.error('Error::', err);
-    // 101 and 150 are the error codes for blocked videos
-    // if (err.data == 101 || err.data == 150) {}
-  };
-
   return (
     <Card sx={{ maxWidth: 728, margin: 'auto' }}>
       <div className="video-container">
@@ -418,9 +413,13 @@ export default function Player({
           <AirbnbSlider
             components={{ Thumb: AirbnbThumbComponent }}
             getAriaLabel={() => 'Minimum distance'}
+            min={0}
+            step={1}
+            max={endTime}
             value={value1}
             onChange={handleChange1}
             valueLabelDisplay="auto"
+            valueLabelFormat={(x) => durationToHMSString(x)}
             disableSwap
             marks={getMarks()}
           />

@@ -1,5 +1,6 @@
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import type { NextPage } from 'next';
+import dynamic from 'next/dynamic';
 import { styled, alpha } from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
 import Paper from '@mui/material/Paper';
@@ -59,6 +60,10 @@ const Home: NextPage = ({
   snippet,
   contentDetails
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+  console.log({ ytid, snippet, contentDetails });
+
+  console.log('here>>', { duration: parseDuration(contentDetails.duration) });
+
   return (
     <>
       <AppBar position="relative">
@@ -138,13 +143,19 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
     id: ytid
   });
 
-  console.log(result.items[0]);
+  const snippet = {
+    title: result.items[0].snippet?.title
+  };
+
+  const contentDetails = {
+    ...result.items[0].contentDetails
+  };
 
   return {
     props: {
       ytid,
-      snippet: result.items[0].snippet,
-      contentDetails: result.items[0].contentDetails
+      snippet,
+      contentDetails
     } // will be passed to the page component as props
   };
 };

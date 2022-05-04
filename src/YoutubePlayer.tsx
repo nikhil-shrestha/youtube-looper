@@ -21,7 +21,9 @@ import ShuffleIcon from '@mui/icons-material/Shuffle';
 import ShuffleOnIcon from '@mui/icons-material/ShuffleOn';
 
 import YouTube from 'react-youtube';
-import { useInterval } from 'usehooks-ts';
+
+import usePrevious from '../hooks/usePrevious';
+import useInterval from '../hooks/useInterval';
 
 import { PlayerState } from '../lib/enum';
 import {
@@ -106,20 +108,18 @@ interface IProps {
   ytid?: string;
   snippet?: any;
   content?: any;
-  startTime: number;
-  endTime: number;
 }
 
-export default function Player({
-  ytid,
-  snippet,
-  content,
-  startTime,
-  endTime
-}: IProps) {
+export default function Player({ ytid, snippet, content }: IProps) {
   const router = useRouter();
 
-  const [slider, setSlider] = useState<number[]>([startTime, endTime]);
+  console.log({ ytid, snippet, content });
+
+  const prevYtid = usePrevious(ytid);
+
+  const duration = parseDuration(content?.duration);
+
+  const [slider, setSlider] = useState<number[]>([0, 0]);
   const [isReady, setIsReady] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
   const playerRef = useRef<any>(null);
@@ -129,11 +129,13 @@ export default function Player({
   const [shuffleMode, setShuffleMode] = useState(false);
 
   useEffect(() => {
-    const sliderStart = router.query?.s ? Number(router.query?.s) : startTime;
-    const sliderEnd = router.query?.e ? Number(router.query?.e) : endTime;
+    if (ytid && prevYtid !== ytid) {
+      const sliderStart = router.query?.s ? Number(router.query?.s) : 0;
+      const sliderEnd = router.query?.e ? Number(router.query?.e) : duration;
 
-    setSlider([sliderStart, sliderEnd]);
-  }, []);
+      setSlider([sliderStart, sliderEnd]);
+    }
+  }, [ytid, prevYtid]);
 
   // every `PLAYER_TIME_CHECK_INTERVAL` seconds, we check the current time of the video, and
   // when we're close to the end, we trigger a repeat or a next based on the RepeatMode
@@ -147,16 +149,16 @@ export default function Player({
   );
 
   const getMarks = () => {
-    const startTime_str = durationToHMSString(startTime);
-    const endTime_str = durationToHMSString(endTime);
+    const startTime_str = durationToHMSString(0);
+    const endTime_str = durationToHMSString(duration);
 
     const marks = [
       {
-        value: startTime,
+        value: 0,
         label: startTime_str
       },
       {
-        value: endTime,
+        value: duration,
         label: endTime_str
       }
     ];
@@ -234,7 +236,7 @@ export default function Player({
     switch (playerState) {
       case PlayerState.VideoCued:
         if (isReady && autoplay) {
-          const startTime1 = Math.max(startTime, 0);
+          const startTime1 = Math.max(slider[0], 0);
           player.seekTo(startTime1, true);
           playVideo();
         }
@@ -308,7 +310,7 @@ export default function Player({
       sliderEnd: sliderEnd,
       sliderStart: sliderStart,
       endTime: endTime1,
-      startTime: startTime,
+      startTime: startTime1,
       state: playerState
     };
 
@@ -405,7 +407,7 @@ export default function Player({
             getAriaLabel={() => 'Minimum distance'}
             min={0}
             step={1}
-            max={endTime}
+            max={duration}
             value={slider}
             onChange={handleChange1}
             valueLabelDisplay="auto"

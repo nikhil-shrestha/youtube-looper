@@ -1,9 +1,8 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useRouter } from 'next/router';
-
 import type { NextPage } from 'next';
-import dynamic from 'next/dynamic';
+
 import { styled, alpha } from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
 import Paper from '@mui/material/Paper';
@@ -14,13 +13,10 @@ import InputBase from '@mui/material/InputBase';
 import Container from '@mui/material/Container';
 import SearchIcon from '@mui/icons-material/Search';
 
-import qs from 'querystring';
-
-import { useDebounce } from 'usehooks-ts';
+import useDebounce from '../hooks/useDebounce';
+import useIsomorphicLayoutEffect from '../hooks/useIsomorphicLayoutEffect';
 
 import { fetchAPI } from '../lib/api';
-
-import { parseDuration } from '../lib/utils';
 
 import Player from '../src/YoutubePlayer';
 import Copyright from '../src/Copyright';
@@ -60,6 +56,12 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   }
 }));
 
+interface IYotubeVideo {
+  ytid: string;
+  snippet: any;
+  content: any;
+}
+
 const Home: NextPage = ({
   ytid,
   snippet,
@@ -67,9 +69,18 @@ const Home: NextPage = ({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter();
 
+  const [video, setVideo] = useState<IYotubeVideo | null>(null);
   const [value, setValue] = useState<string>('');
   const [value1, setValue1] = useState<string>('');
   const debouncedValue = useDebounce<string>(value1, 500);
+
+  useIsomorphicLayoutEffect(() => {
+    setVideo({
+      ytid,
+      snippet,
+      content: contentDetails
+    });
+  }, []);
 
   // Fetch API (optional)
   useEffect(() => {
@@ -94,6 +105,12 @@ const Home: NextPage = ({
       contentDetails = {
         ...result.items[0].contentDetails
       };
+
+      setVideo({
+        ytid,
+        snippet,
+        content: contentDetails
+      });
     };
 
     if (debouncedValue) {
@@ -168,13 +185,7 @@ const Home: NextPage = ({
           </Container>
         </Box>
         <Container sx={{ py: 8 }} maxWidth="md">
-          <Player
-            ytid={ytid}
-            snippet={snippet}
-            content={contentDetails}
-            startTime={0}
-            endTime={parseDuration(contentDetails.duration)}
-          />
+          {video && <Player {...video} />}
         </Container>
       </main>
       {/* Footer */}
@@ -213,8 +224,6 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const contentDetails = {
     ...result.items[0].contentDetails
   };
-
-  console.log(contentDetails);
 
   return {
     props: {

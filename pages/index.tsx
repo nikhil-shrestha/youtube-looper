@@ -185,7 +185,7 @@ const Home: NextPage = ({
           </Container>
         </Box>
         <Container sx={{ py: 8 }} maxWidth="md">
-          {video && <Player {...video} />}
+          {video && <Player setYtid={setValue1} {...video} />}
         </Container>
       </main>
       {/* Footer */}

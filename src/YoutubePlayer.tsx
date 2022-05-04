@@ -114,9 +114,10 @@ interface IProps {
   ytid?: string;
   snippet?: any;
   content?: any;
+  setYtid: (ytid: string) => void;
 }
 
-export default function Player({ ytid, snippet, content }: IProps) {
+export default function Player({ ytid, snippet, content, setYtid }: IProps) {
   const router = useRouter();
 
   console.log({ ytid, snippet, content });
@@ -165,7 +166,9 @@ export default function Player({ ytid, snippet, content }: IProps) {
         image: item.snippet.thumbnails?.medium?.url
       }));
 
-    setRelatedVideos(data);
+    if (data.length > 0) {
+      setRelatedVideos(data);
+    }
   };
 
   // every `PLAYER_TIME_CHECK_INTERVAL` seconds, we check the current time of the video, and
@@ -461,7 +464,18 @@ export default function Player({ ytid, snippet, content }: IProps) {
             Related Videos
           </Typography>
           {relatedVideos.map((relatedVideo) => (
-            <RelatedVideo key={relatedVideo?.id} {...relatedVideo} />
+            <RelatedVideo
+              key={relatedVideo?.id}
+              onClick={() => {
+                setYtid(relatedVideo.id);
+                window !== undefined &&
+                  window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                  });
+              }}
+              {...relatedVideo}
+            />
           ))}
         </Box>
       )}

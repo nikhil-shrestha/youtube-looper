@@ -1,11 +1,34 @@
-import * as React from 'react';
 import { styled } from '@mui/material/styles';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardMedia from '@mui/material/CardMedia';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import ButtonBase from '@mui/material/ButtonBase';
+
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
 import { IRelatedVideoProps } from './YoutubePlayer';
+
+const CardWrapper = styled('div')({
+  display: 'flex',
+  position: 'relative',
+  cursor: 'pointer',
+
+  '&:hover': {
+    '& .layer': { display: 'block' }
+  },
+
+  '& .layer': {
+    position: 'absolute',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    display: 'none'
+  }
+});
 
 const Img = styled('img')({
   margin: 'auto',
@@ -14,32 +37,49 @@ const Img = styled('img')({
   maxHeight: '100%'
 });
 
-export default function ComplexGrid({ title, image }: IRelatedVideoProps) {
+interface IProps extends IRelatedVideoProps {
+  onClick: () => void;
+}
+
+export default function ComplexGrid({ title, image, onClick }: IProps) {
   return (
-    <Paper
-      sx={{
-        p: 2,
-        margin: '15px auto',
-        maxWidth: 500,
-        flexGrow: 1,
-        backgroundColor: (theme) =>
-          theme.palette.mode === 'dark' ? '#1A2027' : '#fff'
-      }}
-    >
-      <Grid container spacing={2}>
-        <Grid item>
-          <ButtonBase sx={{ width: 128, height: 128 }}>
-            <Img alt="complex" src={image} />
-          </ButtonBase>
-        </Grid>
-        <Grid item xs={12} sm container alignItems="center">
-          <Grid item xs>
-            <Typography gutterBottom variant="subtitle1" component="div">
-              {title}
-            </Typography>
-          </Grid>
-        </Grid>
-      </Grid>
-    </Paper>
+    <Card sx={{ display: 'flex', maxWidth: 500, margin: '15px auto' }}>
+      <CardWrapper>
+        <CardMedia
+          component="img"
+          sx={{ width: 151 }}
+          image={image}
+          alt={title}
+        />
+        <div className="layer">
+          <IconButton
+            sx={{
+              margin: 0,
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: 'white'
+            }}
+            aria-label="play/pause"
+            onClick={onClick}
+          >
+            <PlayArrowIcon sx={{ height: 38, width: 38 }} />
+          </IconButton>
+        </div>
+      </CardWrapper>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+        <CardContent sx={{ flex: '1 0 auto' }}>
+          <Typography
+            variant="subtitle1"
+            color="text.secondary"
+            component="div"
+          >
+            {title}
+          </Typography>
+        </CardContent>
+      </Box>
+    </Card>
   );
 }

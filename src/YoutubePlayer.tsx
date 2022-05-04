@@ -13,6 +13,7 @@ import { styled } from '@mui/material/styles';
 
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import RepeatOnIcon from '@mui/icons-material/RepeatOn';
@@ -238,25 +239,25 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
     }
   };
 
-  // useEffect(() => {
-  //   switch (playerState) {
-  //     case PlayerState.Playing:
-  //       // console.log('play');
-  //       pauseVideo();
-  //       break;
+  useEffect(() => {
+    switch (playerState) {
+      case PlayerState.Playing:
+        // console.log('play');
+        pauseVideo();
+        break;
 
-  //     case PlayerState.Paused:
-  //     case PlayerState.Ended:
-  //     case PlayerState.Unstarted:
-  //     case PlayerState.VideoCued:
-  //       // console.log('pause');
-  //       playVideo();
-  //       break;
+      case PlayerState.Paused:
+      case PlayerState.Ended:
+      case PlayerState.Unstarted:
+      case PlayerState.VideoCued:
+        // console.log('pause');
+        playVideo();
+        break;
 
-  //     default:
-  //       break;
-  //   }
-  // }, [toggle]);
+      default:
+        break;
+    }
+  }, [toggle]);
 
   const onReady = (evt: any) => {
     // grab the YT player object from evt.target
@@ -369,6 +370,15 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
     }
   }
 
+  function generateRandom(maxLimit = 10) {
+    let rand = Math.random() * maxLimit;
+    console.log(rand); // say 99.81321410836433
+
+    rand = Math.floor(rand); // 99
+
+    return rand;
+  }
+
   function queueNext() {
     let currentUTCDay = Math.floor(
       new Date().getTime() / (1000 * 60 * 60 * 24)
@@ -377,8 +387,36 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
     if (repeatMode) {
       repeatVideo();
     } else if (shuffleMode) {
+      const ytids = relatedVideos.length
+        ? relatedVideos.map((item) => item.id)
+        : [];
+      if (ytids.length === 0) {
+        // Do nothing
+      } else if (ytids.length) {
+        const index = generateRandom(ytids.length);
+        setYtid(ytids[index]);
+        window !== undefined &&
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+      }
     } else {
       // Check for single song playlist
+
+      const ytids = relatedVideos.length
+        ? relatedVideos.map((item) => item.id)
+        : [];
+      if (ytids.length === 0) {
+        // Do nothing
+      } else if (ytids.length) {
+        setYtid(ytids[0]);
+        window !== undefined &&
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+      }
     }
   }
 
@@ -423,7 +461,10 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
               <IconButton aria-label="previous">
                 <SkipPreviousIcon />
               </IconButton>
-              <IconButton aria-label="play/pause">
+              <IconButton
+                aria-label="play/pause"
+                onClick={() => setToggle((prev) => !prev)}
+              >
                 <PlayArrowIcon sx={{ height: 38, width: 38 }} />
               </IconButton>
               <IconButton aria-label="next">

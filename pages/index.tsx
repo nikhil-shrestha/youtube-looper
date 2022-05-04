@@ -1,4 +1,7 @@
+import { useEffect, useState, ChangeEvent } from 'react';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import { useRouter } from 'next/router';
+
 import type { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { styled, alpha } from '@mui/material/styles';
@@ -10,6 +13,10 @@ import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import Container from '@mui/material/Container';
 import SearchIcon from '@mui/icons-material/Search';
+
+import qs from 'querystring';
+
+import { useDebounce } from 'usehooks-ts';
 
 import { fetchAPI } from '../lib/api';
 
@@ -49,9 +56,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
     // vertical padding + font size from searchIcon
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    transition: theme.transitions.create('width'),
-    width: '100%'
+    paddingLeft: `calc(1em + ${theme.spacing(4)})`
   }
 }));
 
@@ -60,9 +65,64 @@ const Home: NextPage = ({
   snippet,
   contentDetails
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
-  console.log({ ytid, snippet, contentDetails });
+  const router = useRouter();
 
-  console.log('here>>', { duration: parseDuration(contentDetails.duration) });
+  const [value, setValue] = useState<string>('');
+  const [value1, setValue1] = useState<string>('');
+  const debouncedValue = useDebounce<string>(value1, 500);
+
+  // Fetch API (optional)
+  useEffect(() => {
+    // Do fetch here...
+    // Triggers when "debouncedValue" changes
+
+    const fetchData = async () => {
+      console.log({ debouncedValue });
+
+      const result = await fetchAPI('/videos', {
+        part: 'snippet,contentDetails',
+        id: debouncedValue
+      });
+
+      ytid = debouncedValue;
+      router.push(`/?v=${ytid}`, undefined, {
+        shallow: true
+      });
+      snippet = {
+        title: result.items[0].snippet?.title
+      };
+      contentDetails = {
+        ...result.items[0].contentDetails
+      };
+    };
+
+    if (debouncedValue) {
+      fetchData();
+    }
+  }, [debouncedValue]);
+
+  function youTubeGetID(url: string) {
+    var regExp =
+      /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    var match = url.match(regExp);
+    if (match && match[2].length == 11) {
+      return { id: match[2], error: false };
+    } else {
+      //error
+      return { id: '', error: true };
+    }
+  }
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setValue(event.target.value);
+
+    const { id, error } = youTubeGetID(event.target.value);
+    if (error) {
+      return;
+    }
+
+    setValue1(id);
+  };
 
   return (
     <>
@@ -100,6 +160,9 @@ const Home: NextPage = ({
               <StyledInputBase
                 placeholder="Paste Youtube URL here..."
                 inputProps={{ 'aria-label': 'search' }}
+                fullWidth
+                value={value}
+                onChange={handleChange}
               />
             </Search>
           </Container>
@@ -150,6 +213,8 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const contentDetails = {
     ...result.items[0].contentDetails
   };
+
+  console.log(contentDetails);
 
   return {
     props: {

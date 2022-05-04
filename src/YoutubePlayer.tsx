@@ -316,10 +316,9 @@ export default function Player({
       currentTime >= endTime1 - PLAYER_TIME_CHECK_INTERVAL ||
       playerState === PlayerState.Ended
     ) {
-      console.log('cond 1');
       queueNext();
     } else if (currentTime < startTime1) {
-      player.seekTo(startTime, true);
+      player.seekTo(startTime1, true);
     }
   }
 
@@ -339,7 +338,7 @@ export default function Player({
   function repeatVideo() {
     const player = playerRef.current;
 
-    const startTime1 = Math.max(startTime, 0);
+    const startTime1 = Math.max(slider[0], 0);
     player.seekTo(startTime1, true);
 
     playVideo();

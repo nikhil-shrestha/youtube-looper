@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Divider from '@mui/material/Divider';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import Slider, { SliderThumb } from '@mui/material/Slider';
 import { styled } from '@mui/material/styles';
@@ -39,6 +40,16 @@ import RelatedVideo from './RelatedVideo';
 const minDistance = 10;
 
 const PLAYER_TIME_CHECK_INTERVAL = 1.5; // in seconds
+
+const Spinner = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  height: '100%',
+  margin: '0 auto',
+  position: 'absolute'
+});
 
 const AirbnbSlider = styled(Slider)(({ theme }) => ({
   color: '#3a8589',
@@ -384,6 +395,9 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
     <>
       <Card sx={{ maxWidth: 728, margin: 'auto' }}>
         <div className="video-container">
+          <Spinner>
+            <CircularProgress />
+          </Spinner>
           <YouTube
             videoId={ytid}
             opts={{

@@ -3,10 +3,14 @@ import { useRouter } from 'next/router';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
+
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 
 import Slider, { SliderThumb } from '@mui/material/Slider';
 import { styled } from '@mui/material/styles';
@@ -129,6 +133,39 @@ interface IProps {
   setYtid: (ytid: string) => void;
 }
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          <Typography>{children}</Typography>
+        </Box>
+      )}
+    </div>
+  );
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`
+  };
+}
+
 export default function Player({ ytid, snippet, content, setYtid }: IProps) {
   const router = useRouter();
 
@@ -147,6 +184,7 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
   const [toggle, setToggle] = useState(false);
   const [repeatMode, setRepeatMode] = useState(true);
   const [shuffleMode, setShuffleMode] = useState(false);
+  const [value, setValue] = React.useState(0);
 
   useEffect(() => {
     if (ytid && prevYtid !== ytid) {
@@ -193,6 +231,10 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
     // Delay in milliseconds or null to stop it
     PlayerState.Playing ? 1000 : null
   );
+
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+  };
 
   const getMarks = () => {
     const startTime_str = durationToHMSString(0);
@@ -513,27 +555,38 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
         </CardContent>
       </Card>
 
-      {!!relatedVideos.length && (
-        <Box sx={{ mt: 5 }}>
-          <Typography align="center" color="text.secondary">
-            Related Videos
-          </Typography>
-          {relatedVideos.map((relatedVideo) => (
-            <RelatedVideo
-              key={relatedVideo?.id}
-              onClick={() => {
-                setYtid(relatedVideo.id);
-                window !== undefined &&
-                  window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                  });
-              }}
-              {...relatedVideo}
-            />
-          ))}
+      <Paper sx={{ maxWidth: 500, margin: 'auto', mt: 5 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={value}
+            onChange={handleChange}
+            aria-label="basic tabs example"
+          >
+            <Tab label="Related Videos" {...a11yProps(0)} />
+            <Tab label="Queue Next" {...a11yProps(1)} />
+          </Tabs>
         </Box>
-      )}
+        <TabPanel value={value} index={0}>
+          {!!relatedVideos.length &&
+            relatedVideos.map((relatedVideo) => (
+              <RelatedVideo
+                key={relatedVideo?.id}
+                onClick={() => {
+                  setYtid(relatedVideo.id);
+                  window !== undefined &&
+                    window.scrollTo({
+                      top: 0,
+                      behavior: 'smooth'
+                    });
+                }}
+                {...relatedVideo}
+              />
+            ))}
+        </TabPanel>
+        <TabPanel value={value} index={1}>
+          Item Two
+        </TabPanel>
+      </Paper>
     </>
   );
 }

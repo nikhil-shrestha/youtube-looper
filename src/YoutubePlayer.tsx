@@ -25,12 +25,16 @@ import YouTube from 'react-youtube';
 import usePrevious from '../hooks/usePrevious';
 import useInterval from '../hooks/useInterval';
 
+import { fetchAPI } from '../lib/api';
+
 import { PlayerState } from '../lib/enum';
 import {
   parseDuration,
   parseDurationHMSString,
   durationToHMSString
 } from '../lib/utils';
+
+import RelatedVideo from './RelatedVideo';
 
 const minDistance = 10;
 
@@ -99,9 +103,11 @@ function AirbnbThumbComponent(props: AirbnbThumbComponentProps) {
   );
 }
 
-interface Marks {
-  value: number;
-  label: string;
+export interface IRelatedVideoProps {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
 }
 
 interface IProps {
@@ -119,6 +125,7 @@ export default function Player({ ytid, snippet, content }: IProps) {
 
   const duration = parseDuration(content?.duration);
 
+  const [relatedVideos, setRelatedVideos] = useState<IRelatedVideoProps[]>([]);
   const [slider, setSlider] = useState<number[]>([0, 0]);
   const [isReady, setIsReady] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
@@ -134,8 +141,32 @@ export default function Player({ ytid, snippet, content }: IProps) {
       const sliderEnd = router.query?.e ? Number(router.query?.e) : duration;
 
       setSlider([sliderStart, sliderEnd]);
+      searchRelated();
     }
   }, [ytid, prevYtid]);
+
+  const searchRelated = async () => {
+    const res = await fetchAPI('/search', {
+      part: 'snippet',
+      videoCategoryId: '10',
+      type: 'video',
+      relatedToVideoId: ytid,
+      maxResults: 10
+    });
+
+    console.log('result>>>', res);
+
+    const data = res.items
+      .filter((item: any) => item.snippet)
+      .map((item: any) => ({
+        id: item.id.videoId,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        image: item.snippet.thumbnails?.medium?.url
+      }));
+
+    setRelatedVideos(data);
+  };
 
   // every `PLAYER_TIME_CHECK_INTERVAL` seconds, we check the current time of the video, and
   // when we're close to the end, we trigger a repeat or a next based on the RepeatMode
@@ -347,80 +378,93 @@ export default function Player({ ytid, snippet, content }: IProps) {
   }
 
   return (
-    <Card sx={{ maxWidth: 728, margin: 'auto' }}>
-      <div className="video-container">
-        <YouTube
-          videoId={ytid}
-          opts={{
-            playerVars: {
-              autoplay: 1
-            }
-          }}
-          onReady={onReady}
-          onStateChange={onStateChange}
-          onError={onError}
-        />
-      </div>
-      <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            px: 1,
-            pb: 1
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton aria-label="previous">
-              <SkipPreviousIcon />
-            </IconButton>
-            <IconButton aria-label="play/pause">
-              <PlayArrowIcon sx={{ height: 38, width: 38 }} />
-            </IconButton>
-            <IconButton aria-label="next">
-              <SkipNextIcon />
-            </IconButton>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton
-              aria-label="shuffle"
-              onClick={() => setRepeatMode((prev) => !prev)}
-            >
-              {shuffleMode ? <ShuffleOnIcon /> : <ShuffleIcon />}
-            </IconButton>
-            <IconButton
-              aria-label="repeat"
-              onClick={() => setRepeatMode((prev) => !prev)}
-            >
-              {repeatMode ? <RepeatOnIcon /> : <RepeatIcon />}
-            </IconButton>
-            <IconButton aria-label="queue">
-              <QueueIcon />
-            </IconButton>
-          </Box>
-        </Box>
-        <Divider />
-
-        <Box sx={{ py: 2, px: 1 }}>
-          <AirbnbSlider
-            components={{ Thumb: AirbnbThumbComponent }}
-            getAriaLabel={() => 'Minimum distance'}
-            min={0}
-            step={1}
-            max={duration}
-            value={slider}
-            onChange={handleChange1}
-            valueLabelDisplay="auto"
-            valueLabelFormat={(x) => durationToHMSString(x)}
-            disableSwap
-            marks={getMarks()}
+    <>
+      <Card sx={{ maxWidth: 728, margin: 'auto' }}>
+        <div className="video-container">
+          <YouTube
+            videoId={ytid}
+            opts={{
+              playerVars: {
+                autoplay: 1
+              }
+            }}
+            onReady={onReady}
+            onStateChange={onStateChange}
+            onError={onError}
           />
-        </Box>
+        </div>
+        <CardContent>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              px: 1,
+              pb: 1
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <IconButton aria-label="previous">
+                <SkipPreviousIcon />
+              </IconButton>
+              <IconButton aria-label="play/pause">
+                <PlayArrowIcon sx={{ height: 38, width: 38 }} />
+              </IconButton>
+              <IconButton aria-label="next">
+                <SkipNextIcon />
+              </IconButton>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <IconButton
+                aria-label="shuffle"
+                onClick={() => setRepeatMode((prev) => !prev)}
+              >
+                {shuffleMode ? <ShuffleOnIcon /> : <ShuffleIcon />}
+              </IconButton>
+              <IconButton
+                aria-label="repeat"
+                onClick={() => setRepeatMode((prev) => !prev)}
+              >
+                {repeatMode ? <RepeatOnIcon /> : <RepeatIcon />}
+              </IconButton>
+              <IconButton aria-label="queue">
+                <QueueIcon />
+              </IconButton>
+            </Box>
+          </Box>
+          <Divider />
 
-        <Typography variant="body2" color="text.secondary" align="center">
-          Loop any section of the video using the slider!
-        </Typography>
-      </CardContent>
-    </Card>
+          <Box sx={{ py: 2, px: 1 }}>
+            <AirbnbSlider
+              components={{ Thumb: AirbnbThumbComponent }}
+              getAriaLabel={() => 'Minimum distance'}
+              min={0}
+              step={1}
+              max={duration}
+              value={slider}
+              onChange={handleChange1}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(x) => durationToHMSString(x)}
+              disableSwap
+              marks={getMarks()}
+            />
+          </Box>
+
+          <Typography variant="body2" color="text.secondary" align="center">
+            Loop any section of the video using the slider!
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {!!relatedVideos.length && (
+        <Box sx={{ mt: 5 }}>
+          <Typography align="center" color="text.secondary">
+            Related Videos
+          </Typography>
+          {relatedVideos.map((relatedVideo) => (
+            <RelatedVideo key={relatedVideo?.id} {...relatedVideo} />
+          ))}
+        </Box>
+      )}
+    </>
   );
 }

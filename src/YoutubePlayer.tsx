@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -21,6 +21,7 @@ import ShuffleIcon from '@mui/icons-material/Shuffle';
 import ShuffleOnIcon from '@mui/icons-material/ShuffleOn';
 
 import YouTube from 'react-youtube';
+import { useInterval } from 'usehooks-ts';
 
 import { PlayerState } from '../lib/enum';
 import {
@@ -96,8 +97,6 @@ function AirbnbThumbComponent(props: AirbnbThumbComponentProps) {
   );
 }
 
-var player: any = null;
-
 interface Marks {
   value: number;
   label: string;
@@ -120,9 +119,10 @@ export default function Player({
 }: IProps) {
   const router = useRouter();
 
-  const [value1, setValue1] = useState<number[]>([startTime, endTime]);
+  const [slider, setSlider] = useState<number[]>([startTime, endTime]);
   const [isReady, setIsReady] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
+  const playerRef = useRef<any>(null);
   const [playerState, setPlayerState] = useState(PlayerState.Unstarted);
   const [toggle, setToggle] = useState(false);
   const [repeatMode, setRepeatMode] = useState(true);
@@ -132,8 +132,19 @@ export default function Player({
     const sliderStart = router.query?.s ? Number(router.query?.s) : startTime;
     const sliderEnd = router.query?.e ? Number(router.query?.e) : endTime;
 
-    setValue1([sliderStart, sliderEnd]);
+    setSlider([sliderStart, sliderEnd]);
   }, []);
+
+  // every `PLAYER_TIME_CHECK_INTERVAL` seconds, we check the current time of the video, and
+  // when we're close to the end, we trigger a repeat or a next based on the RepeatMode
+  useInterval(
+    () => {
+      // Your custom logic here
+      playerTimeCheck();
+    },
+    // Delay in milliseconds or null to stop it
+    PlayerState.Playing ? 1000 : null
+  );
 
   const getMarks = () => {
     const startTime_str = durationToHMSString(startTime);
@@ -154,19 +165,6 @@ export default function Player({
     return marks;
   };
 
-  // every `PLAYER_TIME_CHECK_INTERVAL` seconds, we check the current time of the video, and
-  // when we're close to the end, we trigger a repeat or a next based on the RepeatMode
-  // useInterval(
-  //   () => {
-  //     // Your custom logic here
-  //     playerTimeCheck();
-  //   },
-  //   PLAYER_TIME_CHECK_INTERVAL * 1000,
-  //   player,
-  //   startTime,
-  //   endTime
-  // );
-
   const handleChange1 = (
     event: Event,
     newValue: number | number[],
@@ -177,19 +175,19 @@ export default function Player({
     }
 
     if (activeThumb === 0) {
-      const startTime1 = Math.min(newValue[0], value1[1] - minDistance);
-      const endTime1 = value1[1];
+      const startTime1 = Math.min(newValue[0], slider[1] - minDistance);
+      const endTime1 = slider[1];
       router.push(`/?s=${startTime1}&e=${endTime1}`, undefined, {
         shallow: true
       });
-      setValue1([startTime1, endTime1]);
+      setSlider([startTime1, endTime1]);
     } else {
-      const startTime1 = value1[0];
-      const endTime1 = Math.max(newValue[1], value1[0] + minDistance);
+      const startTime1 = slider[0];
+      const endTime1 = Math.max(newValue[1], slider[0] + minDistance);
       router.push(`/?s=${startTime1}&e=${endTime1}`, undefined, {
         shallow: true
       });
-      setValue1([startTime1, endTime1]);
+      setSlider([startTime1, endTime1]);
     }
   };
 
@@ -215,7 +213,7 @@ export default function Player({
 
   const onReady = (evt: any) => {
     // grab the YT player object from evt.target
-    player = evt.target;
+    playerRef.current = evt.target;
     setIsReady(true);
   };
 
@@ -227,6 +225,7 @@ export default function Player({
 
   const onStateChange = (evt: any) => {
     const playerState = evt.data;
+    const player = playerRef.current;
 
     // console.log('player state did change...', playerState);
 
@@ -247,12 +246,15 @@ export default function Player({
   };
 
   function playVideo() {
+    const player = playerRef.current;
     if (player !== null) {
       player.playVideo();
     }
   }
 
   function pauseVideo() {
+    const player = playerRef.current;
+
     if (player !== null) {
       player.pauseVideo();
     }
@@ -262,10 +264,14 @@ export default function Player({
     var date = new Date();
     var timestamp = date.getTime();
 
+    const player = playerRef.current;
+
+    console.log('player time check... :: 1');
     // not initialized yet if state player is null (see this.onReady)
     if (player === null) {
       return;
     }
+    console.log('player time check... :: 1.5');
 
     if (
       autoplay &&
@@ -275,25 +281,28 @@ export default function Player({
       playVideo();
     }
 
+    console.log('player time check... :: 2');
     // ignore the player's buffering state so we don't double-repeat
     if (playerState === PlayerState.Buffering) {
       return;
     }
 
+    console.log('player time check... :: 3');
     const duration = player.getDuration();
     // not initialized yet if duration is still 0
     if (duration === 0) {
       return;
     }
 
+    console.log('player time check... :: 4');
     const currentTime = player.getCurrentTime();
     // Return if the current time is undefined (embed is loading)
     if (!currentTime) {
       return;
     }
 
-    const sliderEnd = endTime;
-    const sliderStart = startTime;
+    const sliderEnd = slider[1];
+    const sliderStart = slider[0];
 
     const endTime1 = sliderEnd && sliderEnd > 0 ? sliderEnd : duration;
     const startTime1 = sliderStart && sliderStart >= 0 ? sliderStart : 0;
@@ -333,6 +342,8 @@ export default function Player({
   }
 
   function repeatVideo() {
+    const player = playerRef.current;
+
     const startTime1 = Math.max(startTime, 0);
     player.seekTo(startTime1, true);
 
@@ -375,11 +386,17 @@ export default function Player({
             </IconButton>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton aria-label="playlist">
-              <ShuffleIcon />
+            <IconButton
+              aria-label="shuffle"
+              onClick={() => setRepeatMode((prev) => !prev)}
+            >
+              {shuffleMode ? <ShuffleOnIcon /> : <ShuffleIcon />}
             </IconButton>
-            <IconButton aria-label="repeat">
-              <RepeatIcon />
+            <IconButton
+              aria-label="repeat"
+              onClick={() => setRepeatMode((prev) => !prev)}
+            >
+              {repeatMode ? <RepeatOnIcon /> : <RepeatIcon />}
             </IconButton>
             <IconButton aria-label="queue">
               <QueueIcon />
@@ -395,7 +412,7 @@ export default function Player({
             min={0}
             step={1}
             max={endTime}
-            value={value1}
+            value={slider}
             onChange={handleChange1}
             valueLabelDisplay="auto"
             valueLabelFormat={(x) => durationToHMSString(x)}

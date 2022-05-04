@@ -10,6 +10,10 @@ import InputBase from '@mui/material/InputBase';
 import Container from '@mui/material/Container';
 import SearchIcon from '@mui/icons-material/Search';
 
+import { fetchAPI } from '../lib/api';
+
+import { parseDuration } from '../lib/utils';
+
 import Player from '../src/YoutubePlayer';
 import Copyright from '../src/Copyright';
 
@@ -51,7 +55,9 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 const Home: NextPage = ({
-  ytid
+  ytid,
+  snippet,
+  contentDetails
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   return (
     <>
@@ -94,7 +100,13 @@ const Home: NextPage = ({
           </Container>
         </Box>
         <Container sx={{ py: 8 }} maxWidth="md">
-          <Player ytid={ytid} />
+          <Player
+            ytid={ytid}
+            snippet={snippet}
+            content={contentDetails}
+            startTime={0}
+            endTime={parseDuration(contentDetails.duration)}
+          />
         </Container>
       </main>
       {/* Footer */}
@@ -116,12 +128,23 @@ const Home: NextPage = ({
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const ytid = 'ttpO7wNqFv8';
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+  const v = query.v;
+
+  const ytid = v ?? 'ttpO7wNqFv8';
+
+  const result = await fetchAPI('/videos', {
+    part: 'snippet,contentDetails',
+    id: ytid
+  });
+
+  console.log(result.items[0]);
 
   return {
     props: {
-      ytid
+      ytid,
+      snippet: result.items[0].snippet,
+      contentDetails: result.items[0].contentDetails
     } // will be passed to the page component as props
   };
 };

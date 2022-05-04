@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -21,26 +21,16 @@ import ShuffleOnIcon from '@mui/icons-material/ShuffleOn';
 
 import YouTube from 'react-youtube';
 
-const minDistance = 10;
+import { PlayerState } from '../lib/enum';
+import {
+  parseDuration,
+  parseDurationHMSString,
+  durationToHMSString
+} from '../lib/utils';
 
-const marks = [
-  {
-    value: 0,
-    label: '0°C'
-  },
-  {
-    value: 20,
-    label: '20°C'
-  },
-  {
-    value: 37,
-    label: '37°C'
-  },
-  {
-    value: 100,
-    label: '100°C'
-  }
-];
+import useInterval from '../hooks/useInterval';
+
+const minDistance = 10;
 
 const PLAYER_TIME_CHECK_INTERVAL = 1.5; // in seconds
 
@@ -146,8 +136,72 @@ function AirbnbThumbComponent(props: AirbnbThumbComponentProps) {
   );
 }
 
-export default function Player({ ytid }: IProps) {
-  const [value1, setValue1] = React.useState([20, 37]);
+var player: any = null;
+
+interface Marks {
+  value: number;
+  label: string;
+}
+
+interface IProps {
+  ytid?: string;
+  snippet?: any;
+  content?: any;
+  startTime: number;
+  endTime: number;
+}
+
+export default function Player({
+  ytid,
+  snippet,
+  content,
+  startTime,
+  endTime
+}: IProps) {
+  const [value1, setValue1] = useState<number[]>([
+    startTime ?? 0,
+    endTime ?? 0
+  ]);
+  const [marks, setMarks] = useState<Marks[]>([]);
+  const [sliderValue, setSliderValue] = useState({
+    sliderStart: 0,
+    sliderEnd: 0
+  });
+  const [isReady, setIsReady] = useState(false);
+  const [autoplay, setAutoplay] = useState(false);
+  const [playerState, setPlayerState] = useState(PlayerState.Unstarted);
+  const [toggle, setToggle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState(true);
+  const [shuffleMode, setShuffleMode] = useState(false);
+
+  const getMarks = () => {
+    const startTime_str = durationToHMSString(startTime);
+    const endTime_str = durationToHMSString(endTime);
+
+    return [
+      {
+        value: startTime,
+        label: startTime_str
+      },
+      {
+        value: endTime,
+        label: endTime_str
+      }
+    ];
+  };
+
+  // every `PLAYER_TIME_CHECK_INTERVAL` seconds, we check the current time of the video, and
+  // when we're close to the end, we trigger a repeat or a next based on the RepeatMode
+  // useInterval(
+  //   () => {
+  //     // Your custom logic here
+  //     playerTimeCheck();
+  //   },
+  //   PLAYER_TIME_CHECK_INTERVAL * 1000,
+  //   player,
+  //   startTime,
+  //   endTime
+  // );
 
   const handleChange1 = (
     event: Event,
@@ -159,10 +213,158 @@ export default function Player({ ytid }: IProps) {
     }
 
     if (activeThumb === 0) {
-      setValue1([Math.min(newValue[0], value1[1] - minDistance), value1[1]]);
+      const startTime1 = Math.min(newValue[0], value1[1] - minDistance);
+      setValue1([startTime1, value1[1]]);
     } else {
-      setValue1([value1[0], Math.max(newValue[1], value1[0] + minDistance)]);
+      const endTime1 = Math.max(newValue[1], value1[0] + minDistance);
+      setValue1([value1[0], endTime1]);
     }
+  };
+
+  useEffect(() => {
+    switch (playerState) {
+      case PlayerState.Playing:
+        // console.log('play');
+        pauseVideo();
+        break;
+
+      case PlayerState.Paused:
+      case PlayerState.Ended:
+      case PlayerState.Unstarted:
+      case PlayerState.VideoCued:
+        // console.log('pause');
+        playVideo();
+        break;
+
+      default:
+        break;
+    }
+  }, [toggle]);
+
+  const onReady = (evt: any) => {
+    // grab the YT player object from evt.target
+    player = evt.target;
+    setIsReady(true);
+  };
+
+  const onStateChange = (evt: any) => {
+    const playerState = evt.data;
+
+    // console.log('player state did change...', playerState);
+
+    setPlayerState(playerState);
+
+    switch (playerState) {
+      case PlayerState.VideoCued:
+        if (isReady && autoplay) {
+          const startTime1 = Math.max(startTime, 0);
+          player.seekTo(startTime1, true);
+          playVideo();
+        }
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  function playVideo() {
+    if (player !== null) {
+      player.playVideo();
+    }
+  }
+
+  function pauseVideo() {
+    if (player !== null) {
+      player.pauseVideo();
+    }
+  }
+
+  function playerTimeCheck() {
+    var date = new Date();
+    var timestamp = date.getTime();
+
+    // not initialized yet if state player is null (see this.onReady)
+    if (player === null) {
+      return;
+    }
+
+    if (
+      autoplay &&
+      (playerState === PlayerState.VideoCued ||
+        playerState === PlayerState.Unstarted)
+    ) {
+      playVideo();
+    }
+
+    // ignore the player's buffering state so we don't double-repeat
+    if (playerState === PlayerState.Buffering) {
+      return;
+    }
+
+    const duration = player.getDuration();
+    // not initialized yet if duration is still 0
+    if (duration === 0) {
+      return;
+    }
+
+    const currentTime = player.getCurrentTime();
+    // Return if the current time is undefined (embed is loading)
+    if (!currentTime) {
+      return;
+    }
+
+    const sliderEnd = endTime;
+    const sliderStart = startTime;
+
+    const endTime1 = sliderEnd && sliderEnd > 0 ? sliderEnd : duration;
+    const startTime1 = sliderStart && sliderStart >= 0 ? sliderStart : 0;
+
+    // Intentionally left these console.log here as it should surface useful information in bug reports if we receive "repeat broken" bug reports
+    let repeatParam = {
+      currentTime: currentTime,
+      sliderEnd: sliderEnd,
+      sliderStart: sliderStart,
+      endTime: endTime1,
+      startTime: startTime,
+      state: playerState
+    };
+
+    if (
+      currentTime >= endTime1 - PLAYER_TIME_CHECK_INTERVAL ||
+      playerState === PlayerState.Ended
+    ) {
+      console.log('cond 1');
+      queueNext();
+    } else if (currentTime < startTime1) {
+      player.seekTo(startTime, true);
+    }
+  }
+
+  function queueNext() {
+    let currentUTCDay = Math.floor(
+      new Date().getTime() / (1000 * 60 * 60 * 24)
+    );
+
+    if (repeatMode) {
+      repeatVideo();
+    } else if (shuffleMode) {
+    } else {
+      // Check for single song playlist
+    }
+  }
+
+  function repeatVideo() {
+    const startTime1 = Math.max(startTime, 0);
+    player.seekTo(startTime1, true);
+
+    playVideo();
+  }
+
+  const onError = (err: any) => {
+    console.error('Error::', err);
+    // 101 and 150 are the error codes for blocked videos
+    // if (err.data == 101 || err.data == 150) {}
   };
 
   return (
@@ -175,6 +377,9 @@ export default function Player({ ytid }: IProps) {
               autoplay: 1
             }
           }}
+          onReady={onReady}
+          onStateChange={onStateChange}
+          onError={onError}
         />
       </div>
       <CardContent>
@@ -219,7 +424,7 @@ export default function Player({ ytid }: IProps) {
             onChange={handleChange1}
             valueLabelDisplay="auto"
             disableSwap
-            marks={marks}
+            marks={getMarks()}
           />
         </Box>
 
@@ -229,8 +434,4 @@ export default function Player({ ytid }: IProps) {
       </CardContent>
     </Card>
   );
-}
-
-interface IProps {
-  ytid: string;
 }

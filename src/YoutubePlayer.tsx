@@ -266,12 +266,10 @@ export default function Player({
 
     const player = playerRef.current;
 
-    console.log('player time check... :: 1');
     // not initialized yet if state player is null (see this.onReady)
     if (player === null) {
       return;
     }
-    console.log('player time check... :: 1.5');
 
     if (
       autoplay &&
@@ -281,20 +279,17 @@ export default function Player({
       playVideo();
     }
 
-    console.log('player time check... :: 2');
     // ignore the player's buffering state so we don't double-repeat
     if (playerState === PlayerState.Buffering) {
       return;
     }
 
-    console.log('player time check... :: 3');
     const duration = player.getDuration();
     // not initialized yet if duration is still 0
     if (duration === 0) {
       return;
     }
 
-    console.log('player time check... :: 4');
     const currentTime = player.getCurrentTime();
     // Return if the current time is undefined (embed is loading)
     if (!currentTime) {

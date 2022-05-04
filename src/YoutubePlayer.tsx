@@ -28,8 +28,6 @@ import {
   durationToHMSString
 } from '../lib/utils';
 
-import useInterval from '../hooks/useInterval';
-
 const minDistance = 10;
 
 const PLAYER_TIME_CHECK_INTERVAL = 1.5; // in seconds

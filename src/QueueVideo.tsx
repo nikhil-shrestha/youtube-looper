@@ -1,10 +1,5 @@
 import { Fragment } from 'react';
-import Image from 'next/image';
 import { styled } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
 import MuiListItemButton from '@mui/material/ListItemButton';
 import MuiListItem from '@mui/material/ListItem';
 import Divider from '@mui/material/Divider';

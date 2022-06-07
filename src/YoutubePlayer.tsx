@@ -536,7 +536,7 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
           </Box>
           <Divider />
 
-          <Box sx={{ py: 2, px: 1 }}>
+          <Box sx={{ p: 2 }}>
             <AirbnbSlider
               components={{ Thumb: AirbnbThumbComponent }}
               getAriaLabel={() => 'Minimum distance'}

@@ -11,6 +11,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import List from '@mui/material/List';
 
 import Slider, { SliderThumb } from '@mui/material/Slider';
 import { styled } from '@mui/material/styles';
@@ -41,6 +42,7 @@ import {
 } from '../lib/utils';
 
 import RelatedVideo from './RelatedVideo';
+import QueueVideo from './QueueVideo';
 
 const minDistance = 10;
 
@@ -185,6 +187,7 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
   const [repeatMode, setRepeatMode] = useState(true);
   const [shuffleMode, setShuffleMode] = useState(false);
   const [value, setValue] = React.useState(0);
+  const [queue, setQueue] = React.useState<any[]>([]);
 
   useEffect(() => {
     if (ytid && prevYtid !== ytid) {
@@ -561,30 +564,55 @@ export default function Player({ ytid, snippet, content, setYtid }: IProps) {
             value={value}
             onChange={handleChange}
             aria-label="basic tabs example"
+            sx={{ justifyContent: 'center' }}
           >
             <Tab label="Related Videos" {...a11yProps(0)} />
             <Tab label="Queue Next" {...a11yProps(1)} />
           </Tabs>
         </Box>
         <TabPanel value={value} index={0}>
-          {!!relatedVideos.length &&
-            relatedVideos.map((relatedVideo) => (
-              <RelatedVideo
-                key={relatedVideo?.id}
-                onClick={() => {
-                  setYtid(relatedVideo.id);
-                  window !== undefined &&
-                    window.scrollTo({
-                      top: 0,
-                      behavior: 'smooth'
-                    });
-                }}
-                {...relatedVideo}
-              />
-            ))}
+          <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+            {!!relatedVideos.length &&
+              relatedVideos.map((relatedVideo, index) => (
+                <RelatedVideo
+                  key={relatedVideo?.id}
+                  onClick={() => {
+                    setYtid(relatedVideo.id);
+                    window !== undefined &&
+                      window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                      });
+                  }}
+                  addQueue={() => setQueue((prev) => [relatedVideo, ...prev])}
+                  {...relatedVideo}
+                />
+              ))}
+          </List>
         </TabPanel>
         <TabPanel value={value} index={1}>
-          Item Two
+          <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+            {!!queue.length &&
+              queue.map((relatedVideo) => (
+                <QueueVideo
+                  key={relatedVideo?.id}
+                  onClick={() => {
+                    setYtid(relatedVideo.id);
+                    window !== undefined &&
+                      window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                      });
+                  }}
+                  removeQueue={() =>
+                    setQueue((prev) =>
+                      prev.filter((x) => x.id !== relatedVideo.id)
+                    )
+                  }
+                  {...relatedVideo}
+                />
+              ))}
+          </List>
         </TabPanel>
       </Paper>
     </>

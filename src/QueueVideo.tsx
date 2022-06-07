@@ -14,7 +14,7 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
-import QueueIcon from '@mui/icons-material/Queue';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
@@ -60,14 +60,14 @@ const CardWrapper = styled('div')({
 
 interface IProps extends IRelatedVideoProps {
   onClick: () => void;
-  addQueue: () => void;
+  removeQueue: () => void;
 }
 
 export default function ComplexGrid({
   title,
   image,
   onClick,
-  addQueue
+  removeQueue
 }: IProps) {
   return (
     <Fragment>
@@ -75,16 +75,16 @@ export default function ComplexGrid({
         <ListItem
           alignItems="flex-start"
           secondaryAction={
-            <Tooltip title="Add to Queue">
+            <Tooltip title="Remove from Queue">
               <IconButton
                 edge="end"
                 aria-label="comments"
                 onClick={(evt) => {
                   evt.stopPropagation();
-                  addQueue();
+                  removeQueue();
                 }}
               >
-                <QueueIcon />
+                <DeleteOutlineIcon />
               </IconButton>
             </Tooltip>
           }
